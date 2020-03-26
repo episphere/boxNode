@@ -1,0 +1,25 @@
+{
+  "name": "boxnode",
+  "version": "1.0.0",
+  "description": "nodejs application to engage Box content, initially developed to handle genomics data",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/episphere/boxNode.git"
+  },
+  "keywords": [
+    "bioinformatics"
+  ],
+  "author": "Jonas S Almeida",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/episphere/boxNode/issues"
+  },
+  "homepage": "https://github.com/episphere/boxNode#readme",
+  "dependencies": {
+    "box-node-sdk": "^1.31.0"
+  }
+}
