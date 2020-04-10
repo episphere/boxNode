@@ -1,13 +1,15 @@
 //console.log('index.js loaded')
 const port = 8000;
+const util = require('util')
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
 const open = require('open');
 const fetch = require("node-fetch");
 const prompt = require('prompt-sync')();
-
+const fs = require('fs');
 const readline = require("readline");
+const streamPipeline = util.promisify(require('stream').pipeline)
 
 const client_id = '52zad6jrv5v52mn1hfy1vsjtr9jn5o1w'
 const client_secret = '2rHTqzJumz8s9bAjmKMV83WHX1ooN4kT'
@@ -116,6 +118,19 @@ async function cliLoop(){
                     })
                 }
             }
+        
+            if(cmdParams[0] == 'download'){
+                if(cmdParams.length == 3){
+                    console.log('Beginning download');
+                    await download(cmdParams[1], cmdParams[2])
+                    
+                }
+                else{
+                    console.log('The download command requires 2 parameters')
+                }
+                
+                
+            }
         }
         //cmd = "quit";
         //console.log(cmd)
@@ -128,7 +143,13 @@ function parseFolderItems(response){
     for(let i = 0; i < items.length; i++){
         let item = items[i];
         console.log(item.name)
-        toReturn.push(item.name)
+        if(item.type == 'folder'){
+            toReturn.push(item.name + '/')
+        }
+        else{
+            toReturn.push(item.name)
+        }
+        
     }
     return toReturn;
 }
@@ -151,3 +172,19 @@ function nameToId(name, response ){
     }
     return -1;
 }*/
+
+async function download(id, fileName){
+    const response = await fetch('https://api.box.com/2.0/files/' + id + '/content',{
+        method:"GET",
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+    })
+    if (!response.ok){
+        console.log('Unexpected response ' + response.statusText);
+    }
+    else{
+        await streamPipeline(response.body, fs.createWriteStream(fileName))
+        console.log('Your download, ' + fileName + ' is complete!')
+    }
+}
