@@ -15,6 +15,14 @@ const client_id = '52zad6jrv5v52mn1hfy1vsjtr9jn5o1w'
 const client_secret = '2rHTqzJumz8s9bAjmKMV83WHX1ooN4kT'
 let token = ""
 let tokenResponse = {}
+
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    prompt: '> '
+  });
+  
+
 function readParms(str){
     str=str.replace(/[\?\#]/g,'&').replace(/^\&/,'')
 
@@ -38,7 +46,8 @@ async function getToken(code){
         tokenResponse = data
         token = tokenResponse.access_token
         //console.log(token)
-        cliLoop()
+        rl.prompt();
+        //cliLoop()
     })
 }
 let test = 'abc'
@@ -59,7 +68,9 @@ app.get('/',(req,res) => {
         getToken(params.code)
     }
     res.send('Thanks! You can close this browser now.')
+    //browser.close()
     server.close()
+
 })
 
 //app.get('/', (req, res) => res.send('Hello World! 1'))
@@ -78,33 +89,28 @@ let server = app.listen(port, () => {})
 
 
 let url=`https://account.box.com/api/oauth2/authorize?client_id=${client_id}&response_type=code&redirect_uri=http://localhost:8000/`
-open (url)
+let browser = open (url)
 
-async function cliLoop(){
-    let cmd = ""
-    let currFolder = '0'
-    while(cmd != "quit" && cmd != null){
-        cmd = prompt('>');
-        if(cmd != null){
-            let cmdParams = cmd.split(/\s+/)
-            //console.log(`Received:` + cmd);
-            if(cmdParams[0] == 'ls'){
-                if(cmdParams.length > 1){
-                    let r = await fetch('https://api.box.com/2.0/folders/' + cmdParams[1] + '/items',{
-                        method:"GET",
-                        headers: {
-                            "Authorization": "Bearer " + token
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        //console.log(JSON.stringify(data))
-                        //console.log(data)
-                        let folderNames = parseFolderItems(data)                
-                    })
+
+let cmd = ""
+let currFolder = '0'
+
+rl.on('line', async (line)=>{
+    cmd = line
+    if(cmd != null){
+        let cmdParams = cmd.split(/\s+/)
+        //console.log(`Received:` + cmd);
+        if(cmdParams[0] == 'ls'){
+            if(cmdParams.length > 1){
+                let idOfLocation = await findLocation(cmdParams[1]);
+                if(idOfLocation == -2){
+                    console.log('ERROR: Type Mismatch')
+                }
+                else if (idOfLocation == -1){
+                    console.log('ERROR: Specified location not found')
                 }
                 else{
-                    let r = await fetch('https://api.box.com/2.0/folders/' + currFolder + '/items',{
+                    let r = await fetch('https://api.box.com/2.0/folders/' + idOfLocation + '/items',{
                         method:"GET",
                         headers: {
                             "Authorization": "Bearer " + token
@@ -112,30 +118,52 @@ async function cliLoop(){
                     })
                     .then(response => response.json())
                     .then(data => {
-                        //console.log(data)
                         //console.log(JSON.stringify(data))
+                        //console.log(data)
                         let folderNames = parseFolderItems(data)                
                     })
                 }
             }
-        
-            if(cmdParams[0] == 'download'){
-                if(cmdParams.length == 3){
-                    console.log('Beginning download');
-                    await download(cmdParams[1], cmdParams[2])
-                    
-                }
-                else{
-                    console.log('The download command requires 2 parameters')
-                }
-                
-                
+            else{
+                let r = await fetch('https://api.box.com/2.0/folders/' + currFolder + '/items',{
+                    method:"GET",
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    //console.log(data)
+                    console.log(JSON.stringify(data))
+                    let folderNames = parseFolderItems(data)                
+                })
             }
         }
-        //cmd = "quit";
-        //console.log(cmd)
+    
+        if(cmdParams[0] == 'download'){
+            if(cmdParams.length == 3){
+                console.log('Beginning download');
+                download(cmdParams[1], cmdParams[2])
+                .then(function(res){
+                    console.log('finished!')
+                })
+                
+            }
+            else{
+                console.log('The download command requires 2 parameters')
+            }
+            
+            
+        }
     }
-}
+    //cmd = "quit";
+    //console.log(cmd)
+    rl.prompt();
+}).on('close', () => {
+    console.log('Have a great day!');
+    process.exit(0);
+});
+    
 
 function parseFolderItems(response){
     let items = response.entries;
@@ -173,18 +201,80 @@ function nameToId(name, response ){
     return -1;
 }*/
 
-async function download(id, fileName){
-    const response = await fetch('https://api.box.com/2.0/files/' + id + '/content',{
-        method:"GET",
-        headers: {
-            "Authorization": "Bearer " + token
+//returns number for current folder
+async function findLocation(dest, expected = ""){
+    let currLocation = currFolder;
+    if(dest.startsWith('/')){
+        currLocation = 0
+        dest = dest.substring(1);
+    }
+    if(dest.endsWith('/')){
+        dest = dest.substring(0, dest.length - 1);
+    }
+    arr = dest.split('/')
+    let type = 'folder';
+    for(let i = 0; i < arr.length; i++){
+        let curr = arr[i]
+        await fetch('https://api.box.com/2.0/folders/' + currLocation + '/items',{
+            method:"GET",
+            headers: {
+                "Authorization": "Bearer " + token
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            //console.log(JSON.stringify(data))
+            //console.log(data)
+            let found = false;
+            for(let j = 0; j < data.entries.length; j++){
+                let currEntry = data.entries[j];
+                if(currEntry.name == curr){
+                    currLocation = currEntry.id;
+                    type = currEntry.type;
+                    j = data.entries.length;
+                    found = true;
+                }
+            }
+            if(!found){
+                //console.log('error, location ' + dest + ' not found');
+                return -1;
+            }
+        })
+    }
+
+    if(expected != ""){
+        if(type != expected){
+            return -2;
         }
-    })
-    if (!response.ok){
-        console.log('Unexpected response ' + response.statusText);
     }
-    else{
-        await streamPipeline(response.body, fs.createWriteStream(fileName))
-        console.log('Your download, ' + fileName + ' is complete!')
-    }
+    return currLocation;
+    
+    
+    
+}
+
+
+async function download(id, fileName){
+
+    return new Promise(function (fulfill, reject){
+        fetch('https://api.box.com/2.0/files/' + id + '/content',{
+            method:"GET",
+            headers: {
+                "Authorization": "Bearer " + token
+            }
+        })
+        .then(response => {
+            if (!response.ok){
+                reject('Unexpected response ' + response.statusText);
+            }
+            else{
+                streamPipeline(response.body, fs.createWriteStream(fileName))
+                .then(response => {
+                    fulfill('Your download, ' + fileName + ' is complete!')
+                });
+            }
+        })
+        
+    });
+    
 }
