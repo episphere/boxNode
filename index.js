@@ -134,15 +134,17 @@ rl.on('line', async (line)=>{
                 .then(response => response.json())
                 .then(data => {
                     //console.log(data)
-                    console.log(JSON.stringify(data))
+                    //console.log(JSON.stringify(data))
                     let folderNames = parseFolderItems(data)                
                 })
             }
         }
     
-        if(cmdParams[0] == 'download'){
+        else if(cmdParams[0] == 'download'){
             if(cmdParams.length == 3){
                 console.log('Beginning download');
+                let loc = findLocation(cmdParams[1])
+                
                 download(cmdParams[1], cmdParams[2])
                 .then(function(res){
                     console.log('finished!')
@@ -155,6 +157,13 @@ rl.on('line', async (line)=>{
             
             
         }
+
+        else if(cmdParams[0] == 'cd'){
+            let dest = cmdParams[1]
+            //copy(src, dest)
+            await changeDir(dest);
+        }
+
     }
     //cmd = "quit";
     //console.log(cmd)
@@ -180,6 +189,19 @@ function parseFolderItems(response){
         
     }
     return toReturn;
+}
+
+async function changeDir(dest){
+    let id = await findLocation(dest, expected="folder");
+    if(id == -1){
+        console.log('Folder not found');
+    }
+    else if(id == -2){
+        console.log(dest + ' is not a folder');
+    }
+    else{
+        currFolder = id;
+    }
 }
 /*
 async function findFolder(folder){
@@ -277,4 +299,14 @@ async function download(id, fileName){
         
     });
     
+}
+
+async function copy(src, dest){
+    fetch('https://api.box.com/2.0/folders/' + src + '/copy',{
+        method:"POST",
+        body:{"parent":{"id":dest}},
+        headers: {
+            "Authorization": "Bearer " + token
+        }
+    })
 }
