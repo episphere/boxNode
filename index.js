@@ -45,11 +45,23 @@ async function getToken(code){
     .then(data => {
         tokenResponse = data
         token = tokenResponse.access_token
-        //console.log(token)
+        //refresh_token = tokenResponse.refresh_token
+        //expireTime = tokenResponse.expires_in
+        console.log(JSON.stringify(tokenResponse))
         rl.prompt();
         //cliLoop()
     })
 }
+async function revokeToken(code){
+    fetch('https://api.box.com/oauth2/revoke',{
+        method:"POST",
+        body:`grant_type=authorization_code&code=${code}&client_id=${client_id}&client_secret=${client_secret}`,
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+    })
+}
+
 let test = 'abc'
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -73,20 +85,7 @@ app.get('/',(req,res) => {
 
 })
 
-//app.get('/', (req, res) => res.send('Hello World! 1'))
-/*
-app.post('/',(req,res) =>{
-    
-});
-*/
- /*
-expressApp.use(function(req, res, next){
-    console.log(req);
-    next();
-})*/
 let server = app.listen(port, () => {})
-
-
 
 let url=`https://account.box.com/api/oauth2/authorize?client_id=${client_id}&response_type=code&redirect_uri=http://localhost:8000/`
 let browser = open (url)
@@ -144,10 +143,10 @@ rl.on('line', async (line)=>{
             if(cmdParams.length == 3){
                 console.log('Beginning download');
                 let loc = findLocation(cmdParams[1])
-                
+                //console.log(loc)
                 download(cmdParams[1], cmdParams[2])
                 .then(function(res){
-                    console.log('finished!')
+                    console.log('\nYour download, ' + cmdParams[1] + ' is finished!\n')
                 })
                 
             }
@@ -300,6 +299,8 @@ async function download(id, fileName){
     });
     
 }
+
+
 
 async function copy(src, dest){
     fetch('https://api.box.com/2.0/folders/' + src + '/copy',{
