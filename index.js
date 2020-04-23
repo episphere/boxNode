@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const { program } = require('commander');
 const {Storage} = require('@google-cloud/storage');
 const BoxSDK = require('box-node-sdk')
