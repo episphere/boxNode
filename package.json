@@ -20,11 +20,14 @@
   },
   "homepage": "https://github.com/episphere/boxNode#readme",
   "bin": {
-    "boxDownload": "./index.js"
+    "boxDownload": "./index.js",
+    "hello":"./hello.js"
   },
   "dependencies": {
     "@google-cloud/storage": "^4.7.0",
     "box-node-sdk": "^1.32.0",
-    "commander": "^5.0.0"
+    "commander": "^5.0.0",
+    "node-fetch": "^2.6.0",
+    "open": "^7.0.3"
   }
 }
