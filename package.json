@@ -20,8 +20,7 @@
   },
   "homepage": "https://github.com/episphere/boxNode#readme",
   "bin": {
-    "boxDownload": "./index.js",
-    "hello":"./hello.js"
+    "boxDownload": "./index.js"
   },
   "dependencies": {
     "@google-cloud/storage": "^4.7.0",
