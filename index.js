@@ -9,12 +9,16 @@ program
   .option('-b, --bucket <type>', 'select bucket')
   .option('-i, --id <type>', 'box file id')
   .option('-d, --dest <type>', 'output file name')
-  .option('-t --token <type>', 'authentication token');
+  .option('-t, --token <type>', 'authentication token');
 program.parse(process.argv);
+
+//console.log(program.opts())
 
 download(program);
 
+
 function download(program){
+    var end, start;
     if(program.bucket === undefined){
         console.log('Must specify a bucket');
         return;
@@ -42,13 +46,15 @@ function download(program){
         }
         else{
             //const bucket = 'boxnodetesting';
+            start = new Date();
             const bucket = storage.bucket(program.bucket);
             const blob = bucket.file(program.dest);
             const output = blob.createWriteStream();
             //var output = fs.createWriteStream('/Users/shenbn/Documents/test/boxNode/test.txt.gz');
             stream.pipe(output)
             stream.on('end',()=>{
-                console.log('Your download, ' + program.dest + ' is complete!')
+                end = new Date();
+                console.log('Your download, ' + program.dest + ' is complete! Time elapsed: ' + (end.getTime() - start.getTime()) + 'ms')
             });
 
         }
